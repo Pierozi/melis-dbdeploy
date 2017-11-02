@@ -9,6 +9,7 @@
 
 namespace MelisDbDeploy;
 
+use MelisDbDeploy\Service\MelisDbDeployDiscoveryService;
 use Zend\ModuleManager\ModuleManager;
 use Zend\Mvc\Service\ServiceManagerConfig;
 use Zend\ServiceManager\ServiceManager;
@@ -52,7 +53,12 @@ class Module
      */
     public static function run(Event $event)
     {
-        $smConfig = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'module.config.php';
-        $serviceManager = new ServiceManager(new ServiceManagerConfig($smConfig));
+        $composer = $event->getComposer();
+        $smConfig = include dirname(__DIR__) . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'module.config.php';
+        $serviceManager = new ServiceManager(new ServiceManagerConfig($smConfig['service_manager']));
+
+        /** @var MelisDbDeployDiscoveryService $discovery */
+        $discovery = $serviceManager->get('MelisDbDeployDiscoveryService');
+        $discovery->processing($composer);
     }
 }

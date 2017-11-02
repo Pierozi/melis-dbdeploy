@@ -19,13 +19,15 @@
     "dbdeploy": true
   },
   "require": {
-    "php": "^5.5 || ^7.0",
+    "php": ">=5.4",
     "melisplatform/melis-core": "~2.2.7",
-    "zendframework/zendframework": "2.5.3",
+    "zendframework/zendframework": "~2.5.3",
+    "phpunit/phpunit": "~5.7",
     "phing/phing": "~2.16.0"
   },
   "require-dev": {
-    "phpunit/phpunit": "~4.8",
+    "melisplatform/melis-cms-news": "~2.2.2",
+    "php-mock/php-mock": "~2.0.0",
     "psy/psysh": "@stable"
   },
   "autoload": {

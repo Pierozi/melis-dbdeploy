@@ -9,7 +9,7 @@
 
 namespace MelisDbDeploy\Service\Factory;
 
-use MelisDbDeploy\Service\MelisDbDeployDiscoveryService;
+use MelisDbDeploy\Service\MelisDbDeployDeployService;
 use Zend\ServiceManager\ServiceLocatorInterface;
 use Zend\ServiceManager\FactoryInterface;
 
@@ -17,7 +17,7 @@ class MelisDbDeployDeployServiceFactory implements FactoryInterface
 {
     public function createService(ServiceLocatorInterface $sl)
     {
-        $service = new MelisDbDeployDiscoveryService();
+        $service = new MelisDbDeployDeployService();
         $service->setServiceLocator($sl);
 
         return $service;
