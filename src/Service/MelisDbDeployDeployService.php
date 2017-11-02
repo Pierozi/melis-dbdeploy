@@ -143,14 +143,19 @@ class MelisDbDeployDeployService extends MelisCoreGeneralService
 
     protected function prepare()
     {
-        //TODO get the application configuration to load database
+        $path = 'config/autoload/platforms/development.php';
 
-        $this->db = new Adapter([
-            'driver'   => static::DRIVER,
-            'database' => 'melis',
-            'hostname' => 'mysql',
-            'username' => 'root',
-            'password' => 'rootpasswd',
+        if (!file_exists($path)) {
+            throw new \Exception(sprintf(
+                'The configuration file %s must exist to be able to connect on the database',
+                $path
+            ));
+        }
+
+        $appConfig = include $path;
+
+        $this->db = new Adapter($appConfig['db'] + [
+            'driver' => static::DRIVER,
         ]);
     }
 }
