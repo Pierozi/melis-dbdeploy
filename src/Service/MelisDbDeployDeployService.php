@@ -27,6 +27,8 @@ class MelisDbDeployDeployService extends MelisCoreGeneralService
     const OUTPUT_FILENAME = 'melisplatform-dbdeploy.sql';
     const OUTPUT_FILENAME_UNDO = 'melisplatform-dbdeploy-reverse.sql';
 
+    const DRIVER = 'pdo';
+
     /**
      * @var Adapter
      */
@@ -63,7 +65,16 @@ class MelisDbDeployDeployService extends MelisCoreGeneralService
     public function applyDeltaPaths(Array $deltaPaths)
     {
         $cwd = getcwd();
-        chdir('/var/www/html/cache');
+        $workingDirectory = $cwd . DIRECTORY_SEPARATOR . 'cache';
+
+        chdir($workingDirectory);
+
+        if (!file_exists($workingDirectory)) {
+            throw new \Exception(sprintf(
+                'The directory %s must exist to store temporary database migration file',
+                $workingDirectory
+            ));
+        }
 
         $this->begin();
 
@@ -108,6 +119,8 @@ class MelisDbDeployDeployService extends MelisCoreGeneralService
         $sql = file_get_contents(static::OUTPUT_FILENAME);
 
         $this->db->query($sql, Adapter::QUERY_MODE_EXECUTE);
+
+        rename(static::OUTPUT_FILENAME, microtime(true) . '-' . static::OUTPUT_FILENAME);
     }
 
     protected function commit()
@@ -130,8 +143,10 @@ class MelisDbDeployDeployService extends MelisCoreGeneralService
 
     protected function prepare()
     {
+        //TODO get the application configuration to load database
+
         $this->db = new Adapter([
-            'driver'   => 'Mysqli',
+            'driver'   => static::DRIVER,
             'database' => 'melis',
             'hostname' => 'mysql',
             'username' => 'root',

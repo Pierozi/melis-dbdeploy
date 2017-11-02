@@ -22,11 +22,10 @@
     "php": ">=5.4",
     "melisplatform/melis-core": "~2.2.7",
     "zendframework/zendframework": "~2.5.3",
-    "phpunit/phpunit": "~5.7",
     "phing/phing": "~2.16.0"
   },
   "require-dev": {
-    "melisplatform/melis-cms-news": "~2.2.2",
+    "phpunit/phpunit": "~5.7",
     "php-mock/php-mock": "~2.0.0",
     "psy/psysh": "@stable"
   },
@@ -34,8 +33,5 @@
     "psr-4": {
       "MelisDbDeploy\\": "src/"
     }
-  },
-  "scripts": {
-    "post-update-cmd": "MelisDbDeploy\\Module::run"
   }
 }
