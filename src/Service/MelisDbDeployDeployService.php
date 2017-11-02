@@ -94,6 +94,8 @@ class MelisDbDeployDeployService extends MelisCoreGeneralService
 
     protected function begin()
     {
+        echo 'MelisDbDeploy: ' . __METHOD__ / "\n";
+
         $project = new \Project();
         $DbDeployTask = new \DbDeployTask();
 
@@ -116,15 +118,20 @@ class MelisDbDeployDeployService extends MelisCoreGeneralService
         $DbDeployTask->setDir($path);
         $DbDeployTask->main();
 
-        $sql = file_get_contents(static::OUTPUT_FILENAME);
+        $deltaFilename = microtime(true) . '-' . static::OUTPUT_FILENAME;
+        rename(static::OUTPUT_FILENAME, $deltaFilename);
+
+        echo "MelisDbDeploy: Applying delta file $deltaFilename...\n";
+
+        $sql = file_get_contents($deltaFilename);
 
         $this->db->query($sql, Adapter::QUERY_MODE_EXECUTE);
-
-        rename(static::OUTPUT_FILENAME, microtime(true) . '-' . static::OUTPUT_FILENAME);
     }
 
     protected function commit()
     {
+        echo 'MelisDbDeploy: ' . __METHOD__ / "\n";
+
         $this->db
             ->getDriver()
             ->getConnection()
@@ -134,6 +141,8 @@ class MelisDbDeployDeployService extends MelisCoreGeneralService
 
     protected function rollback()
     {
+        echo 'MelisDbDeploy: ' . __METHOD__ / "\n";
+
         $this->db
             ->getDriver()
             ->getConnection()
