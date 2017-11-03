@@ -66,7 +66,10 @@ class MelisDbDeployDiscoveryService extends MelisCoreGeneralService
                 continue;
             }
 
-            $deltas += static::findDeltasInPackage($package, $vendorDir);
+            $deltas = array_merge(
+                $deltas,
+                static::findDeltasInPackage($package, $vendorDir)
+            );
         }
 
         return $deltas;
@@ -81,7 +84,7 @@ class MelisDbDeployDiscoveryService extends MelisCoreGeneralService
             ->getRepositoryManager()
             ->getLocalRepository()
             ->getCanonicalPackages()
-        ;
+            ;
     }
 
     /**
@@ -98,12 +101,8 @@ class MelisDbDeployDiscoveryService extends MelisCoreGeneralService
             return [];
         }
 
-        $files = [];
+        $files = glob("$path/*.sql");
 
-        foreach (glob("$path/*.sql") as $filename) {
-            $files[] = $filename;
-        }
-
-        return $files;
+        return empty($files) ? [] : [$path];
     }
 }

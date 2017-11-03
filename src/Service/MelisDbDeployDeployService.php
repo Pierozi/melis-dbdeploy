@@ -11,7 +11,6 @@ namespace MelisDbDeploy\Service;
 
 use MelisCore\Service\MelisCoreGeneralService;
 use Zend\Db\Adapter\Adapter;
-use Zend\Db\Adapter\Exception\InvalidQueryException;
 
 class MelisDbDeployDeployService extends MelisCoreGeneralService
 {
@@ -34,6 +33,16 @@ class MelisDbDeployDeployService extends MelisCoreGeneralService
      */
     protected $db;
 
+    /**
+     * @var \DbDeployTask
+     */
+    protected $dbDeployTask;
+
+    /**
+     * @var Array
+     */
+    protected $appConfig;
+
     public function __construct()
     {
         $this->prepare();
@@ -46,7 +55,7 @@ class MelisDbDeployDeployService extends MelisCoreGeneralService
                 'describe ' . self::TABLE_NAME,
                 Adapter::QUERY_MODE_EXECUTE
             );
-        } catch (InvalidQueryException $invalidQueryException) {
+        } catch (\PDOException $invalidQueryException) {
             return false;
         }
 
@@ -64,9 +73,10 @@ class MelisDbDeployDeployService extends MelisCoreGeneralService
 
     public function applyDeltaPaths(Array $deltaPaths)
     {
+        \Phing::startup();
+
         $cwd = getcwd();
         $workingDirectory = $cwd . DIRECTORY_SEPARATOR . 'cache';
-
         chdir($workingDirectory);
 
         if (!file_exists($workingDirectory)) {
@@ -76,78 +86,32 @@ class MelisDbDeployDeployService extends MelisCoreGeneralService
             ));
         }
 
-        $this->begin();
-
-        try {
-            foreach ($deltaPaths as $deltaPath) {
-                $this->execute($deltaPath);
-            }
-        } catch (\Exception $exception) {
-            $this->rollback();
-            throw $exception;
+        foreach ($deltaPaths as $deltaPath) {
+            $this->execute($deltaPath);
         }
 
-        $this->commit();
-
         chdir($cwd);
-    }
 
-    protected function begin()
-    {
-        echo 'MelisDbDeploy: ' . __METHOD__ / "\n";
-
-        $project = new \Project();
-        $DbDeployTask = new \DbDeployTask();
-
-        $DbDeployTask->setProject($project);
-        $DbDeployTask->setUrl('mysql:host=mysql;dbname=melis');
-        $DbDeployTask->setUserId('root');
-        $DbDeployTask->setPassword('rootpasswd');
-        $DbDeployTask->setOutputFile(static::OUTPUT_FILENAME);
-        $DbDeployTask->setUndoOutputFile(static::OUTPUT_FILENAME_UNDO);
-
-        $this->db
-            ->getDriver()
-            ->getConnection()
-            ->beginTransaction()
-        ;
+        \Phing::shutdown();
     }
 
     protected function execute($path)
     {
-        $DbDeployTask->setDir($path);
-        $DbDeployTask->main();
+        $this->dbDeployTask->setDir($path);
+        $this->dbDeployTask->main();
 
         $deltaFilename = microtime(true) . '-' . static::OUTPUT_FILENAME;
         rename(static::OUTPUT_FILENAME, $deltaFilename);
 
-        echo "MelisDbDeploy: Applying delta file $deltaFilename...\n";
-
-        $sql = file_get_contents($deltaFilename);
-
-        $this->db->query($sql, Adapter::QUERY_MODE_EXECUTE);
-    }
-
-    protected function commit()
-    {
-        echo 'MelisDbDeploy: ' . __METHOD__ / "\n";
-
-        $this->db
-            ->getDriver()
-            ->getConnection()
-            ->commit()
-        ;
-    }
-
-    protected function rollback()
-    {
-        echo 'MelisDbDeploy: ' . __METHOD__ / "\n";
-
-        $this->db
-            ->getDriver()
-            ->getConnection()
-            ->rollback()
-        ;
+        $file = new \PhingFile(realpath($deltaFilename));
+        $execTask = new \PDOSQLExecTask();
+        $execTask->setProject($this->dbDeployTask->getProject());
+        $execTask->setOwningTarget($this->dbDeployTask->getOwningTarget());
+        $execTask->setUrl($this->appConfig['db']['dsn']);
+        $execTask->setUserid($this->appConfig['db']['username']);
+        $execTask->setPassword($this->appConfig['db']['password']);
+        $execTask->setSrc($file);
+        $execTask->main();
     }
 
     protected function prepare()
@@ -162,9 +126,33 @@ class MelisDbDeployDeployService extends MelisCoreGeneralService
         }
 
         $appConfig = include $path;
+        $this->appConfig = $appConfig;
 
         $this->db = new Adapter($appConfig['db'] + [
-            'driver' => static::DRIVER,
-        ]);
+                'driver' => static::DRIVER,
+            ]);
+
+        $cwd = getcwd();
+        set_include_path("$cwd/vendor/phing/phing/classes/");
+
+        $target = new \Target();
+        $target->setName('default');
+
+        $project = new \Project();
+
+        $ctx = new \PhingXMLContext($project);
+        $project->addReference("phing.parsing.context", $ctx);
+
+        $project->addTarget('default', $target);
+        $project->setDefaultTarget('default');
+
+        $this->dbDeployTask = new \DbDeployTask();
+        $this->dbDeployTask->setProject($project);
+        $this->dbDeployTask->setUrl($appConfig['db']['dsn']);
+        $this->dbDeployTask->setUserId($appConfig['db']['username']);
+        $this->dbDeployTask->setPassword($appConfig['db']['password']);
+        $this->dbDeployTask->setOutputFile(static::OUTPUT_FILENAME);
+        $this->dbDeployTask->setUndoOutputFile(static::OUTPUT_FILENAME_UNDO);
+        $this->dbDeployTask->setOwningTarget($target);
     }
 }
