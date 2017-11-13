@@ -10,6 +10,7 @@
 namespace MelisDbDeploy\Service;
 
 use MelisCore\Service\MelisCoreGeneralService;
+use MelisDbDeploy\PhingListener;
 use Zend\Db\Adapter\Adapter;
 
 class MelisDbDeployDeployService extends MelisCoreGeneralService
@@ -116,6 +117,7 @@ class MelisDbDeployDeployService extends MelisCoreGeneralService
 
     protected function prepare()
     {
+        //TODO find the first file in the path
         $path = 'config/autoload/platforms/development.php';
 
         if (!file_exists($path)) {
@@ -145,6 +147,7 @@ class MelisDbDeployDeployService extends MelisCoreGeneralService
 
         $project->addTarget('default', $target);
         $project->setDefaultTarget('default');
+        $project->addBuildListener(new PhingListener());
 
         $this->dbDeployTask = new \DbDeployTask();
         $this->dbDeployTask->setProject($project);
