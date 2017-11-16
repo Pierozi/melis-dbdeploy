@@ -58,7 +58,12 @@ class Module
         $serviceManager = new ServiceManager(new ServiceManagerConfig($smConfig['service_manager']));
 
         /** @var MelisDbDeployDiscoveryService $discovery */
-        $discovery = $serviceManager->get('MelisDbDeployDiscoveryService');
-        $discovery->processing($composer);
+        try {
+          $discovery = $serviceManager->get('MelisDbDeployDiscoveryService');
+          $discovery->processing($composer);
+        } catch (ConfigFileNotFoundException $exception) {
+          // If missing config file, due nothing
+          return;
+        }
     }
 }

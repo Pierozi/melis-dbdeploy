@@ -117,16 +117,13 @@ class MelisDbDeployDeployService extends MelisCoreGeneralService
 
     protected function prepare()
     {
-        //TODO find the first file in the path
-        $path = 'config/autoload/platforms/development.php';
+        $configurations = glob("config/autoload/platforms/*.php");
 
-        if (!file_exists($path)) {
-            throw new \Exception(sprintf(
-                'The configuration file %s must exist to be able to connect on the database',
-                $path
-            ));
+        if (empty($configurations)) {
+            throw new ConfigFileNotFoundException();
         }
 
+        $path = current($configuartions);
         $appConfig = include $path;
         $this->appConfig = $appConfig;
 
