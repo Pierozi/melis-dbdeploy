@@ -10,6 +10,7 @@
 namespace MelisDbDeploy\Service;
 
 use MelisCore\Service\MelisCoreGeneralService;
+use MelisDbDeploy\ConfigFileNotFoundException;
 use MelisDbDeploy\PhingListener;
 use Zend\Db\Adapter\Adapter;
 
