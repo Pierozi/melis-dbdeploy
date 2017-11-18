@@ -124,7 +124,7 @@ class MelisDbDeployDeployService extends MelisCoreGeneralService
             throw new ConfigFileNotFoundException();
         }
 
-        $path = current($configuartions);
+        $path = current($configurations);
         $appConfig = include $path;
         $this->appConfig = $appConfig;
 
