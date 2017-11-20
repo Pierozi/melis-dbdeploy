@@ -73,7 +73,7 @@ class MelisDbDeployDeployService extends MelisCoreGeneralService
         $this->db->query($sqlCreateTableChangelog, Adapter::QUERY_MODE_EXECUTE);
     }
 
-    public function applyDeltaPaths(Array $deltaPaths)
+    public function applyDeltaPath($deltaPath)
     {
         \Phing::startup();
 
@@ -88,9 +88,7 @@ class MelisDbDeployDeployService extends MelisCoreGeneralService
             ));
         }
 
-        foreach ($deltaPaths as $deltaPath) {
-            $this->execute($deltaPath);
-        }
+        $this->execute($deltaPath);
 
         chdir($cwd);
 
@@ -102,10 +100,9 @@ class MelisDbDeployDeployService extends MelisCoreGeneralService
         $this->dbDeployTask->setDir($path);
         $this->dbDeployTask->main();
 
-        $deltaFilename = microtime(true) . '-' . static::OUTPUT_FILENAME;
-        rename(static::OUTPUT_FILENAME, $deltaFilename);
+        $filename = realpath(static::OUTPUT_FILENAME);
 
-        $file = new \PhingFile(realpath($deltaFilename));
+        $file = new \PhingFile($filename);
         $execTask = new \PDOSQLExecTask();
         $execTask->setProject($this->dbDeployTask->getProject());
         $execTask->setOwningTarget($this->dbDeployTask->getOwningTarget());
@@ -114,6 +111,8 @@ class MelisDbDeployDeployService extends MelisCoreGeneralService
         $execTask->setPassword($this->appConfig['db']['password']);
         $execTask->setSrc($file);
         $execTask->main();
+
+        unlink($filename);
     }
 
     protected function prepare()
@@ -155,5 +154,6 @@ class MelisDbDeployDeployService extends MelisCoreGeneralService
         $this->dbDeployTask->setOutputFile(static::OUTPUT_FILENAME);
         $this->dbDeployTask->setUndoOutputFile(static::OUTPUT_FILENAME_UNDO);
         $this->dbDeployTask->setOwningTarget($target);
+        $this->dbDeployTask->setCheckAll(true);
     }
 }

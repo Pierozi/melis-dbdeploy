@@ -16,6 +16,7 @@ use MelisCore\Service\MelisCoreGeneralService;
 class MelisDbDeployDiscoveryService extends MelisCoreGeneralService
 {
     const VENDOR = 'melisplatform';
+    const CACHE_DELTAS_PATH = 'dbdeploy';
 
     /**
      * @var Composer
@@ -36,18 +37,16 @@ class MelisDbDeployDiscoveryService extends MelisCoreGeneralService
             $deployService->install();
         }
 
-        $deltas = $this->findDeltaPaths();
+        $this->copyDeltas();
 
-        if (!empty($deltas)) {
-            $deployService->applyDeltaPaths($deltas);
-        }
+        $deployService->applyDeltaPath(realpath('cache' . DIRECTORY_SEPARATOR . self::CACHE_DELTAS_PATH));
     }
 
     /**
      * Find melis delta migration that match
      * condition of extra dbdeploy
      */
-    protected function findDeltaPaths()
+    protected function copyDeltas()
     {
         $vendorDir = $this->Composer->getConfig()->get('vendor-dir');
         $packages = $this->getLocalPackages();
@@ -68,7 +67,7 @@ class MelisDbDeployDiscoveryService extends MelisCoreGeneralService
 
             $deltas = array_merge(
                 $deltas,
-                static::findDeltasInPackage($package, $vendorDir)
+                static::copyDeltasFromPackage($package, $vendorDir)
             );
         }
 
@@ -92,7 +91,7 @@ class MelisDbDeployDiscoveryService extends MelisCoreGeneralService
      * @param $vendorDir
      * @return array
      */
-    protected static function findDeltasInPackage(PackageInterface $package, $vendorDir)
+    protected static function copyDeltasFromPackage(PackageInterface $package, $vendorDir)
     {
         $sp = DIRECTORY_SEPARATOR;
         $path = $vendorDir . $sp . $package->getName() . $sp . 'install';
@@ -102,7 +101,23 @@ class MelisDbDeployDiscoveryService extends MelisCoreGeneralService
         }
 
         $files = glob("$path/*.sql");
+        $deltaPath = 'cache' . $sp . self::CACHE_DELTAS_PATH . $sp;
 
-        return empty($files) ? [] : [$path];
+        if (!file_exists($deltaPath)) {
+            mkdir($deltaPath, 750);
+        }
+
+        $deltas = [];
+
+        foreach ($files as $file) {
+            copy($file, $deltaPath . basename($file));
+            $deltas[] = $deltaPath . basename($file);
+        }
+
+        if (empty($files)) {
+            return [];
+        }
+
+        return $deltas;
     }
 }
